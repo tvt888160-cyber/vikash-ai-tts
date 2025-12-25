@@ -2,6 +2,7 @@
   "name": "ai-text-to-voice",
   "version": "1.0.0",
   "description": "AI Text to Voice Website",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
