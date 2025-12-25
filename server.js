@@ -1,30 +1,41 @@
 import express from "express";
-import OpenAI from "openai";
-import fs from "fs";
-import cors from "cors";
+import fetch from "node-fetch";
+import path from "path";
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
 app.use(express.static("public"));
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 app.post("/tts", async (req, res) => {
-  const { text, voice } = req.body;
+  const { text } = req.body;
 
-  const response = await openai.audio.speech.create({
-    model: "gpt-4o-mini-tts",
-    voice: voice || "alloy",
-    input: text
-  });
+  try {
+    const response = await fetch(
+      "https://api.openai.com/v1/audio/speech",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini-tts",
+          voice: "alloy",
+          input: text
+        })
+      }
+    );
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  fs.writeFileSync("public/output.mp3", buffer);
-
-  res.json({ file: "output.mp3" });
+    const buffer = await response.arrayBuffer();
+    res.set("Content-Type", "audio/mpeg");
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    res.status(500).send("Voice generation failed");
+  }
 });
 
-app.listen(3000);
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
